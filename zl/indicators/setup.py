@@ -28,6 +28,40 @@ BUY = 'Buy'
 SELL = 'Sell'
 
 
+def setup(events, field, period, lookback):
+    values = [e[field] for e in events]
+
+    direction = None
+
+    if any(itertools.imap(operator.lt,
+                          values[lookback:],
+                          values[:period])):
+        direction = BUY
+
+    elif any(itertools.imap(operator.gt,
+                            values[lookback:],
+                            values[:period])):
+        direction = SELL
+
+    if not direction:
+        return
+
+    bars = events[lookback:]
+
+    lowes = [bar['low'] for bar in bars]
+    highs = [bar['high'] for bar in bars]
+
+    high = np.max(highs)
+    low = np.max(lowes)
+
+    if direction == BUY:
+        perfection = np.min(lowes[-4:-2])
+    else:
+        perfection = np.max(highs[-4:-2])
+
+    return Signal(direction, high, low, bars, perfection)
+
+
 class Signal(object):
     def __init__(self, direction, high, low, bars, perfection):
         self.directin = direction
@@ -111,22 +145,4 @@ class SetupWindow(transforms.EventWindow):
         if len(self.ticks) < self.window_length:
             return
 
-        direction = self._get_direction()
-
-        if not direction:
-            return
-
-        bars = self.ticks[self.lookback:]
-
-        lowes = [bar['low'] for bar in bars]
-        highs = [bar['high'] for bar in bars]
-
-        high = np.max(highs)
-        low = np.max(lowes)
-
-        if direction == BUY:
-            perfection = np.min(lowes[-4:-2])
-        else:
-            perfection = np.max(highs[-4:-2])
-
-        return Signal(direction, high, low, bars, perfection)
+        return setup(self.ticks, self.field, self.period, self.lookback)
