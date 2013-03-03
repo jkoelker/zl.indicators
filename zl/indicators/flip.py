@@ -24,16 +24,28 @@ BULL = 'Bull'
 BEAR = 'Bear'
 
 
+def flip(events, field):
+    Yp = events[-1][field]
+    Xp = events[-2][field]
+    X = events[0][field]
+    Y = events[1][field]
+
+    if (Xp > X) and (Yp < Y):
+        return BEAR
+    if (Xp < X) and (Yp > Y):
+        return BULL
+
+
 class Flip(object):
     __metaclass__ = transforms.TransformMeta
 
-    def __init__(self, period=4, setup_price='close_price'):
+    def __init__(self, period=4, field='close_price'):
         self.period = period
-        self.setup_price = setup_price
+        self.field = field
         self.sid_windows = collections.defaultdict(self.create_window)
 
     def create_window(self):
-        return FlipWindow(self.period, self.setup_price)
+        return FlipWindow(self.period, self.field)
 
     def update(self, event):
         window = self.sid_windows[event.sid]
@@ -42,15 +54,15 @@ class Flip(object):
 
 
 class FlipWindow(transforms.EventWindow):
-    def __init__(self, period, setup_price):
+    def __init__(self, period, field):
         transforms.EventWindow.__init__(self, window_length=period + 2)
 
         self.period = period
-        self.setup_price = setup_price
+        self.field = field
 
     def handle_add(self, event):
-        assert self.setup_price in event
-        assert isinstance(event[self.setup_price], numbers.Number)
+        assert self.field in event
+        assert isinstance(event[self.field], numbers.Number)
 
     def handle_remove(self, event):
         pass
@@ -59,12 +71,4 @@ class FlipWindow(transforms.EventWindow):
         if len(self.ticks) < self.window_length:
             return
 
-        Yp = self.ticks[-1][self.setup_price]
-        Xp = self.ticks[-2][self.setup_price]
-        X = self.ticks[0][self.setup_price]
-        Y = self.ticks[1][self.setup_price]
-
-        if (Xp > X) and (Yp < Y):
-            return BEAR
-        if (Xp < X) and (Yp > Y):
-            return BULL
+        return flip(self.ticks, self.field)
