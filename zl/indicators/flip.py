@@ -49,9 +49,8 @@ class FlipWindow(transforms.EventWindow):
         self.setup_price = setup_price
 
     def handle_add(self, event):
-        assert hasattr(event, self.setup_price)
-        value = getattr(event, self.setup_price, None)
-        assert isinstance(value, numbers.Number)
+        assert self.setup_price in event
+        assert isinstance(event[self.setup_price], numbers.Number)
 
     def handle_remove(self, event):
         pass
@@ -60,10 +59,10 @@ class FlipWindow(transforms.EventWindow):
         if len(self.ticks) < self.window_length:
             return
 
-        Yp = getattr(self.ticks[-1], self.setup_price)
-        Xp = getattr(self.ticks[-2], self.setup_price)
-        X = getattr(self.ticks[0], self.setup_price)
-        Y = getattr(self.ticks[1], self.setup_price)
+        Yp = self.ticks[-1][self.setup_price]
+        Xp = self.ticks[-2][self.setup_price]
+        X = self.ticks[0][self.setup_price]
+        Y = self.ticks[1][self.setup_price]
 
         if (Xp > X) and (Yp < Y):
             return BEAR
