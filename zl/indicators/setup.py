@@ -36,10 +36,14 @@ class Signal(object):
         self.bars = bars
         self.perfection = perfection
 
-    def is_perfection(self, event):
+    def check_perfection(self, event):
         if self.direction == BUY:
             return event['low'] <= self.perfection
         return event['high'] >= self.perfection
+
+    @utils.cached_property
+    def is_perfect(self):
+        return any([self.check_perfection(b) for b in self.bars[-2:]])
 
     @utils.cached_property
     def risk_level(self):
@@ -81,7 +85,6 @@ class SetupWindow(transforms.EventWindow):
         self.period = period
         self.lookback = lookback
         self.field = field
-        self.signal = None
 
     def handle_add(self, event):
         for field in (self.field, 'high', 'low'):
@@ -104,15 +107,6 @@ class SetupWindow(transforms.EventWindow):
                                 values[:self.period])):
             return SELL
 
-    def _perfection(self):
-        if not self.signal:
-            return
-
-        if self.signal.is_perfection(self.ticks[-1]):
-            signal = self.signal
-            self.signal = None
-            return signal
-
     def __call__(self):
         if len(self.ticks) < self.window_length:
             return
@@ -120,7 +114,7 @@ class SetupWindow(transforms.EventWindow):
         direction = self._get_direction()
 
         if not direction:
-            return self._perfection()
+            return
 
         bars = self.ticks[self.lookback:]
 
@@ -135,10 +129,4 @@ class SetupWindow(transforms.EventWindow):
         else:
             perfection = np.max(highs[-4:-2])
 
-        signal = Signal(direction, high, low, bars, perfection)
-
-        for check in bars[-2:]:
-            if signal.is_perfection(check):
-                return signal
-
-        self.signal = signal
+        return Signal(direction, high, low, bars, perfection)
