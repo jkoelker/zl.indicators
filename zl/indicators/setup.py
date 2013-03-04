@@ -128,19 +128,6 @@ class SetupWindow(transforms.EventWindow):
     def handle_remove(self, event):
         pass
 
-    def _get_direction(self):
-        values = [t[self.field] for t in self.ticks]
-
-        if any(itertools.imap(operator.lt,
-                              values[self.lookback:],
-                              values[:self.period])):
-            return BUY
-
-        elif any(itertools.imap(operator.gt,
-                                values[self.lookback:],
-                                values[:self.period])):
-            return SELL
-
     def __call__(self):
         if len(self.ticks) < self.window_length:
             return
