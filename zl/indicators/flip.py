@@ -39,7 +39,7 @@ def flip(events, field):
 class Flip(object):
     __metaclass__ = transforms.TransformMeta
 
-    def __init__(self, period=4, field='close_price'):
+    def __init__(self, period=4, field='close'):
         self.period = period
         self.field = field
         self.sid_windows = collections.defaultdict(self.create_window)

@@ -96,7 +96,7 @@ class Signal(object):
 class Setup(object):
     __metaclass__ = transforms.TransformMeta
 
-    def __init__(self, period=9, lookback=4, field='close_price'):
+    def __init__(self, period=9, lookback=4, field='close'):
         self.period = period
         self.lookback = lookback
         self.field = field
