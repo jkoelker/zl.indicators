@@ -116,6 +116,8 @@ class CountdownWindow(transforms.EventWindow):
             for bar in self.setup_signal.bars[-(lookback + 1):]:
                 self.update(bar)
 
+    # TODO(jkoelker) There is probably a bug in the window expansion. Need
+    #                to think aboot this more
     def handle_add(self, event):
         for field in (self.field, 'high', 'low'):
             assert field in event
