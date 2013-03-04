@@ -132,11 +132,17 @@ class CountdownWindow(transforms.EventWindow):
     def handle_remove(self, event):
         pass
 
+    def _reset_window(self):
+        self.window_length = self.period + self.lookback
+
     def __call__(self):
         if len(self.ticks) < self.window_length:
             return
 
+        # NOTE(jkoelker) If tracking a Setup Signal, the signal is
+        #                determined in the handle_add phase
         if self.signal:
+            self._reset_window()
             return self.signal
 
         # NOTE(jkoelker) We are not tracking a Setup Signal
@@ -148,4 +154,5 @@ class CountdownWindow(transforms.EventWindow):
             signal = countdown(SELL, self.ticks, self.period, self.lookback,
                                self.field)
 
+        self._reset_window()
         return signal
