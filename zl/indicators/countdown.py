@@ -156,5 +156,6 @@ class CountdownWindow(transforms.EventWindow):
             signal = countdown(SELL, self.ticks, self.period, self.lookback,
                                self.field)
 
-        self._reset_window()
+        if signal is not None:
+            self._reset_window()
         return signal
