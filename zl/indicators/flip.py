@@ -61,7 +61,7 @@ class FlipWindow(transforms.EventWindow):
         self.field = field
 
     def handle_add(self, event):
-        assert self.field in event
+        assert self.field in event, "%s not in event" % self.field
         assert isinstance(event[self.field], numbers.Number)
 
     def handle_remove(self, event):
