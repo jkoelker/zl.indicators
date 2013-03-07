@@ -46,7 +46,7 @@ def setup(events, field, period, lookback):
     if not direction:
         return
 
-    bars = events[lookback:]
+    bars = list(events)[lookback:]
 
     lowes = [bar['low'] for bar in bars]
     highs = [bar['high'] for bar in bars]
