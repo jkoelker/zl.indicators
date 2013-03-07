@@ -64,7 +64,7 @@ def setup(events, field, period, lookback):
 
 class Signal(object):
     def __init__(self, direction, high, low, bars, perfection):
-        self.directin = direction
+        self.direction = direction
         self.high = high
         self.low = low
         self.bars = bars
