@@ -77,24 +77,18 @@ class SequentialWindow(object):
                  countdown_field):
         self.windows = []
 
-        self.flip_period = flip_period
-        self.flip_field = flip_field
-
-        self.setup_period = setup_period
-        self.setup_lookback = setup_lookback
-        self.setup_field = setup_field
         self.setup_reverse_cancel = setup_reverse_cancel
 
         self.countdown_period = countdown_period,
         self.countdown_lookback = countdown_lookback
         self.countdown_field = countdown_field
 
-        self.flip = flip.FlipWindow(self.flip_period, self.flip_field)
+        self.flip = flip.FlipWindow(flip_period, flip_field)
         self.windows.append(self.flip)
 
-        self.setup = setup.SetupWindow(self.setup_period,
-                                       self.setup_lookback,
-                                       self.setup_field)
+        self.setup = setup.SetupWindow(setup_period,
+                                       setup_lookback,
+                                       setup_field)
         self.windows.append(self.setup)
 
     def update(self, event):
@@ -106,12 +100,7 @@ class SequentialWindow(object):
 
     def __call__(self):
         flip_signal = self.flip()
-        if not flip_signal:
-            return
-
         setup_signal = self.setup()
-        if not setup_signal:
-            return
 
         if setup_signal.direction == setup.BUY:
             self._start_countdown(countdown.BUY, setup_signal)
