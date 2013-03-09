@@ -92,66 +92,24 @@ class SequentialWindow(object):
         self.flip = flip.FlipWindow(self.flip_period, self.flip_field)
         self.windows.append(self.flip)
 
-        self.setups = {setup.BUY: None, setup.SELL: None}
+        self.setup = setup.SetupWindow(self.setup_period,
+                                       self.setup_lookback,
+                                       self.setup_field)
+        self.windows.append(self.setup)
 
     def update(self, event):
         for window in self.windows:
             window.update(event)
-
-    def _clear_setup(self, direction):
-        existing_setup = self.setups.get(direction)
-        if existing_setup is None:
-            return
-
-        if existing_setup in self.windows:
-            self.windows.remove(existing_setup)
-
-        self.setups[direction] = None
-
-    def _add_setup(self, direction):
-        existing_setup = self.setups.get(direction)
-
-        # NOTE(jkoelker) We are already tracking a setup in this direction
-        if existing_setup is not None:
-            return
-
-        new_setup = setup.SetupWindow(self.setup_period,
-                                      self.setup_lookback,
-                                      self.setup_field)
-        self.windows.append(new_setup)
-        self.setups[direction] = new_setup
-        return self.setups[direction]
-
-    def _start_setup(self, direction):
-        if direction == setup.BUY:
-            self._clear_setup(setup.SELL)
-            return self._add_setup(setup.BUY)
-
-        elif direction == setup.SELL:
-            self._clear_setup(setup.BUY)
-            return self._add_setup(setup.SELL)
-
-    def _check_setups(self):
-        for direction, setup_window in self.setups.iteritems():
-            if setup_window is None:
-                continue
-            return setup_window()
 
     def _start_countdown(self, direction, setup_signal):
         pass
 
     def __call__(self):
         flip_signal = self.flip()
-
         if not flip_signal:
             return
 
-        if flip_signal == flip.BEAR:
-            self._start_setup(setup.BUY)
-        elif flip_signal == flip.BULL:
-            self._start_setup(setup.SELL)
-
-        setup_signal = self._check_setups()
+        setup_signal = self.setup()
         if not setup_signal:
             return
 
