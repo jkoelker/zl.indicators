@@ -123,9 +123,13 @@ class CountdownWindow(transforms.EventWindow):
             assert field in event
             assert isinstance(event[field], numbers.Number)
 
-        if len(self.ticks) >= self.window_length and self.setup_signal:
-            self.signal = countdown(self.setup_signal.direct, self.ticks,
-                                    self.period, self.lookback, self.field)
+        if self.setup_signal:
+            self.setup_signal.check_perfection(event)
+
+            if len(self.ticks) >= self.window_length:
+                self.signal = countdown(self.setup_signal.direction,
+                                        self.ticks, self.period,
+                                        self.lookback, self.field)
 
         # NOTE(jkoelker) Check if we need to expand the window
         if len(self.ticks) == self.window_length:

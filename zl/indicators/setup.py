@@ -69,15 +69,19 @@ class Signal(object):
         self.low = low
         self.bars = bars
         self.perfection = perfection
+        self._perfect = False
 
     def check_perfection(self, event):
         if self.direction == BUY:
-            return event['low'] <= self.perfection
-        return event['high'] >= self.perfection
+            self._perfect = event['low'] <= self.perfection
+            return self._perfect
+        self._perfect = event['high'] >= self.perfection
+        return self._perfect
 
-    @utils.cached_property
+    @property
     def is_perfect(self):
-        return any([self.check_perfection(b) for b in self.bars[-2:]])
+        return self._perfect or any([self.check_perfection(b)
+                                     for b in self.bars[-2:]])
 
     @utils.cached_property
     def risk_level(self):
