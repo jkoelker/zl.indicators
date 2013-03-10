@@ -29,32 +29,27 @@ BUY = 'Buy'
 SELL = 'Sell'
 
 
-def setup(events, field, period, lookback, flip_period, flip_field):
+def setup(events, field, period, lookback, flip_signal):
     events = list(events)
-    flip_signal = flip.flip(events[:flip_period], flip_field)
-
-    if not flip_signal:
-        return
-
     values = [e[field] for e in events]
 
     direction = None
+    flip_dir = flip_signal['direction']
 
-    if flip_signal == flip.BEAR and any(itertools.imap(operator.lt,
-                                                       values[lookback:],
-                                                       values[:period])):
+    if flip_dir == flip.BEAR and all(itertools.imap(operator.lt,
+                                                    values[lookback:],
+                                                    values[:period])):
         direction = BUY
 
-    elif flip_signal == flip.BULL and any(itertools.imap(operator.gt,
-                                                         values[lookback:],
-                                                         values[:period])):
+    elif flip_dir == flip.BULL and all(itertools.imap(operator.gt,
+                                                      values[lookback:],
+                                                      values[:period])):
         direction = SELL
 
     if not direction:
         return
 
-    bars = list(events)[lookback:]
-
+    bars = events[lookback:]
     lowes = [bar['low'] for bar in bars]
     highs = [bar['high'] for bar in bars]
 
@@ -66,40 +61,42 @@ def setup(events, field, period, lookback, flip_period, flip_field):
     else:
         perfection = np.max(highs[-4:-2])
 
-    return Signal(direction, high, low, bars, perfection)
+    return Signal(direction, high, low, bars, perfection, flip_signal)
 
 
-class Signal(object):
-    def __init__(self, direction, high, low, bars, perfection):
-        self.direction = direction
-        self.high = high
-        self.low = low
-        self.bars = bars
-        self.perfection = perfection
+class Signal(dict):
+    def __init__(self, direction, high, low, bars, perfection,
+                 flip_signal):
+        self['direction'] = direction
+        self['high'] = high
+        self['low'] = low
+        self['bars'] = bars
+        self['flip'] = flip_signal
+        self['perfection'] = perfection
         self._perfect = False
 
     def check_perfection(self, event):
         if self.direction == BUY:
-            self._perfect = event['low'] <= self.perfection
+            self._perfect = event['low'] <= self['perfection']
             return self._perfect
-        self._perfect = event['high'] >= self.perfection
+        self._perfect = event['high'] >= self['perfection']
         return self._perfect
 
     @property
     def is_perfect(self):
         return self._perfect or any([self.check_perfection(b)
-                                     for b in self.bars[-2:]])
+                                     for b in self['bars'][-2:]])
 
     @utils.cached_property
     def risk_level(self):
-        for bar in self.bars:
-            if self.direction == BUY:
-                if bar['low'] == self.low:
-                    return self.low - (bar['high'] - bar['low'])
+        for bar in self['bars']:
+            if self['direction'] == BUY:
+                if bar['low'] == self['low']:
+                    return self['low'] - (bar['high'] - bar['low'])
 
-            elif self.direction == SELL:
-                if bar['high'] == self.hight:
-                    return self.high + (bar['high'] - bar['low'])
+            elif self['direction'] == SELL:
+                if bar['high'] == self['high']:
+                    return self['high'] + (bar['high'] - bar['low'])
 
         assert False, "Signal extreme not found in bars!"
 
@@ -134,16 +131,20 @@ class Setup(object):
 
 class SetupWindow(transforms.EventWindow):
     def __init__(self, period, lookback, field, flip_period, flip_field):
-        window_length = period + lookback + flip_period
+        window_length = period + lookback - 1
         transforms.EventWindow.__init__(self, window_length=window_length)
 
         self.period = period
         self.lookback = lookback
         self.field = field
-        self.flip_period = flip_period
-        self.flip_field = flip_field
+
+        self.flip = flip.FlipWindow(flip_period, flip_field)
+        self.flip_signal = None
+        self._counter = 0
 
     def handle_add(self, event):
+        self.flip.update(event)
+
         for field in (self.field, 'high', 'low'):
             assert field in event
             assert isinstance(event[field], numbers.Number)
@@ -152,8 +153,25 @@ class SetupWindow(transforms.EventWindow):
         pass
 
     def __call__(self):
+        flip_signal = self.flip()
+        self._counter = self._counter + 1
+
+        if flip_signal and not self.flip_signal:
+            self.flip_signal = flip_signal
+            self._counter = 1
+
         if len(self.ticks) < self.window_length:
             return
 
-        return setup(self.ticks, self.field, self.period, self.lookback,
-                     self.flip_period, self.flip_field)
+        if not self.flip_signal:
+            return
+
+        if self._counter > self.period:
+            self._counter = 0
+            return
+
+        if self._counter == self.period:
+            signal = setup(self.ticks, self.field, self.period,
+                           self.lookback, self.flip_signal)
+            self.flip_signal = None
+            return signal
