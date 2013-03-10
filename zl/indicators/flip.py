@@ -31,9 +31,15 @@ def flip(events, field):
     Y = events[1][field]
 
     if (Xp > X) and (Yp < Y):
-        return BEAR
+        return Signal(BEAR, events)
     if (Xp < X) and (Yp > Y):
-        return BULL
+        return Signal(BULL, events)
+
+
+class Signal(dict):
+    def __init__(self, direction, bars):
+        self['direction'] = direction
+        self['bars'] = bars
 
 
 class Flip(object):
