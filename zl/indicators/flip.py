@@ -25,6 +25,7 @@ BEAR = 'Bear'
 
 
 def flip(events, field):
+    events = list(events)
     Yp = events[-1][field]
     Xp = events[-2][field]
     X = events[0][field]
