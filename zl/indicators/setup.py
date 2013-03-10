@@ -21,6 +21,7 @@ import operator
 
 import numpy as np
 from zipline.transforms import utils as transforms
+from zl.indicators import flip
 from zl.indicators import utils
 
 
@@ -28,19 +29,25 @@ BUY = 'Buy'
 SELL = 'Sell'
 
 
-def setup(events, field, period, lookback):
+def setup(events, field, period, lookback, flip_period, flip_field):
+    events = list(events)
+    flip_signal = flip.flip(events[:flip_period], flip_field)
+
+    if not flip_signal:
+        return
+
     values = [e[field] for e in events]
 
     direction = None
 
-    if any(itertools.imap(operator.lt,
-                          values[lookback:],
-                          values[:period])):
+    if flip_signal == flip.BEAR and any(itertools.imap(operator.lt,
+                                                       values[lookback:],
+                                                       values[:period])):
         direction = BUY
 
-    elif any(itertools.imap(operator.gt,
-                            values[lookback:],
-                            values[:period])):
+    elif flip_signal == flip.BULL and any(itertools.imap(operator.gt,
+                                                         values[lookback:],
+                                                         values[:period])):
         direction = SELL
 
     if not direction:
@@ -100,14 +107,24 @@ class Signal(object):
 class Setup(object):
     __metaclass__ = transforms.TransformMeta
 
-    def __init__(self, period=9, lookback=4, field='close'):
+    def __init__(self, period=9, lookback=4, field='close',
+                 flip_period=None, flip_field=None):
+        if flip_period is None:
+            flip_period = lookback
+
+        if flip_field is None:
+            flip_field = field
+
         self.period = period
         self.lookback = lookback
         self.field = field
+        self.flip_period = flip_period
+        self.flip_field = flip_field
         self.sid_windows = collections.defaultdict(self.create_window)
 
     def create_window(self):
-        return SetupWindow(self.period, self.lookback, self.field)
+        return SetupWindow(self.period, self.lookback, self.field,
+                           self.flip_period, self.flip_field)
 
     def update(self, event):
         window = self.sid_windows[event.sid]
@@ -116,13 +133,15 @@ class Setup(object):
 
 
 class SetupWindow(transforms.EventWindow):
-    def __init__(self, period, lookback, field):
-        window_length = period + lookback
+    def __init__(self, period, lookback, field, flip_period, flip_field):
+        window_length = period + lookback + flip_period
         transforms.EventWindow.__init__(self, window_length=window_length)
 
         self.period = period
         self.lookback = lookback
         self.field = field
+        self.flip_period = flip_period
+        self.flip_field = flip_field
 
     def handle_add(self, event):
         for field in (self.field, 'high', 'low'):
@@ -136,4 +155,5 @@ class SetupWindow(transforms.EventWindow):
         if len(self.ticks) < self.window_length:
             return
 
-        return setup(self.ticks, self.field, self.period, self.lookback)
+        return setup(self.ticks, self.field, self.period, self.lookback,
+                     self.flip_period, self.flip_field)
