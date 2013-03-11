@@ -132,10 +132,6 @@ class CountdownWindow(transforms.EventWindow):
                                         self.ticks, self.period,
                                         self.lookback, self.field)
 
-        # NOTE(jkoelker) Check if we need to expand the window
-        if len(self.ticks) == self.window_length:
-            self.window_length = self.window_length + 1
-
     def handle_remove(self, event):
         pass
 
@@ -143,14 +139,18 @@ class CountdownWindow(transforms.EventWindow):
         self.window_length = self.period + self.lookback
 
     def __call__(self):
-        if len(self.ticks) < self.window_length:
-            return
-
         # NOTE(jkoelker) If tracking a Setup Signal, the signal is
         #                determined in the handle_add phase
         if self.signal:
             self._reset_window()
             return self.signal
+
+        if len(self.ticks) <= self.window_length:
+            return
+
+        # NOTE(jkoelker) Check if we need to expand the window
+        if len(self.ticks) == self.window_length:
+            self.window_length = self.window_length + 1
 
         # NOTE(jkoelker) We are not tracking a Setup Signal
         signal = None
@@ -161,6 +161,6 @@ class CountdownWindow(transforms.EventWindow):
             signal = countdown(SELL, self.ticks, self.period, self.lookback,
                                self.field)
 
-        if signal is not None:
+        if signal:
             self._reset_window()
         return signal
