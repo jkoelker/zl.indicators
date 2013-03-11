@@ -31,7 +31,7 @@ def label_bar(ax, label, bar, above=False):
     if above:
         trans = offset(ax, 0, 5)
         y = bar[3]
-        ax.text(x, y, label, transform=trans)
+    ax.text(x, y, label, transform=trans)
 
 
 def plot_setup(signal, date_strfmt='%b-%d'):
