@@ -76,7 +76,7 @@ class Signal(dict):
         self._perfect = False
 
     def check_perfection(self, event):
-        if self.direction == BUY:
+        if self['direction'] == BUY:
             self._perfect = event['low'] <= self['perfection']
             return self._perfect
         self._perfect = event['high'] >= self['perfection']
