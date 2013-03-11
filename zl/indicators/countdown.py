@@ -29,6 +29,7 @@ SELL = 'Sell'
 
 
 def countdown(direction, events, period, lookback, field):
+    events = list(events)
     event_iter = itertools.izip(events[lookback:], events[:-lookback])
     signals = []
     compare_field = 'low'
