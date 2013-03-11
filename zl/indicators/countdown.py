@@ -113,7 +113,7 @@ class CountdownWindow(transforms.EventWindow):
         # NOTE(jkoelker) Prime the window with the last event + lookback
         #                from the setup_signal
         if self.setup_signal is not None:
-            for bar in self.setup_signal.bars[-(lookback + 1):]:
+            for bar in self.setup_signal['bars'][-(lookback + 1):]:
                 self.update(bar)
 
     # TODO(jkoelker) There is probably a bug in the window expansion. Need
@@ -127,7 +127,7 @@ class CountdownWindow(transforms.EventWindow):
             self.setup_signal.check_perfection(event)
 
             if len(self.ticks) >= self.window_length:
-                self.signal = countdown(self.setup_signal.direction,
+                self.signal = countdown(self.setup_signal['direction'],
                                         self.ticks, self.period,
                                         self.lookback, self.field)
 
