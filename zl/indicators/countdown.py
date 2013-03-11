@@ -28,7 +28,8 @@ BUY = 'Buy'
 SELL = 'Sell'
 
 
-def countdown(direction, events, period, lookback, field):
+def countdown(direction, events, period, lookback, field,
+              setup_signal=None):
     events = list(events)
     event_iter = itertools.izip(events[lookback:], events[:-lookback])
     signals = []
@@ -57,27 +58,29 @@ def countdown(direction, events, period, lookback, field):
 
             high = np.max(highs)
             low = np.max(lowes)
-            return Signal(direction, high, low, bars, signals)
+            return Signal(direction, high, low, bars, signals,
+                          setup_signal)
 
 
-class Signal(object):
-    def __init__(self, direction, high, low, bars, signals):
-        self.directin = direction
-        self.high = high
-        self.low = low
-        self.bars = bars
-        self.signals = signals
+class Signal(dict):
+    def __init__(self, direction, high, low, bars, signals, setup_signal):
+        self['direction'] = direction
+        self['high'] = high
+        self['low'] = low
+        self['bars'] = bars
+        self['signals'] = signals
+        self['setup'] = setup_signal
 
     @utils.cached_property
     def risk_level(self):
-        for bar in self.bars:
-            if self.direction == BUY:
-                if bar['low'] == self.low:
-                    return self.low - (bar['high'] - bar['low'])
+        for bar in self['bars']:
+            if self['direction'] == BUY:
+                if bar['low'] == self['low']:
+                    return self['low'] - (bar['high'] - bar['low'])
 
-            elif self.direction == SELL:
-                if bar['high'] == self.hight:
-                    return self.high + (bar['high'] - bar['low'])
+            elif self['direction'] == SELL:
+                if bar['high'] == self['high']:
+                    return self['high'] + (bar['high'] - bar['low'])
 
         assert False, "Signal extreme not found in bars!"
 
@@ -130,7 +133,8 @@ class CountdownWindow(transforms.EventWindow):
             if len(self.ticks) >= self.window_length:
                 self.signal = countdown(self.setup_signal['direction'],
                                         self.ticks, self.period,
-                                        self.lookback, self.field)
+                                        self.lookback, self.field,
+                                        self.setup_signal)
 
     def handle_remove(self, event):
         pass
