@@ -15,9 +15,9 @@
 #  limitations under the License.
 
 import collections
+import functools
 
 from zl.indicators import countdown
-from zl.indicators import flip
 from zl.indicators import setup
 from zipline.transforms import utils as transforms
 
@@ -83,26 +83,45 @@ class SequentialWindow(object):
         self.countdown_lookback = countdown_lookback
         self.countdown_field = countdown_field
 
-        self.flip = flip.FlipWindow(flip_period, flip_field)
-        self.windows.append(self.flip)
-
         self.setup = setup.SetupWindow(setup_period,
                                        setup_lookback,
-                                       setup_field)
+                                       setup_field,
+                                       flip_period,
+                                       flip_field)
         self.windows.append(self.setup)
+
+        self.countdown = None
+        self.setup_signal = None
+        self.start_countdown = functools.partial(countdown.CountdownWindow,
+                                                 countdown_period,
+                                                 countdown_lookback,
+                                                 countdown_field)
 
     def update(self, event):
         for window in self.windows:
             window.update(event)
 
-    def _start_countdown(self, direction, setup_signal):
-        pass
+        if self.setup_signal:
+            self.setup_signal.check_perfection(event)
+
+    def _handle_setup(self, signal):
+        if not self.setup_signal and not self.countdown:
+            self.setup_signal = signal
+            self.countdown = self.start_countdown(setup_signal=signal)
+            self.windows.append(self.countdown)
 
     def __call__(self):
-        flip_signal = self.flip()
         setup_signal = self.setup()
+        if setup_signal is not None:
+            self._handle_setup(setup_signal)
 
-        if setup_signal.direction == setup.BUY:
-            self._start_countdown(countdown.BUY, setup_signal)
-        elif setup_signal.direction == setup.SELL:
-            self._start_countdown(countdown.SELL, setup_signal)
+        if not self.setup_signal or not self.countdown:
+            return
+
+        countdown = self.countdown()
+        return countdown
+
+#        if setup_signal.direction == setup.BUY:
+#            self._start_countdown(countdown.BUY, setup_signal)
+#        elif setup_signal.direction == setup.SELL:
+#            self._start_countdown(countdown.SELL, setup_signal)
