@@ -53,12 +53,23 @@ def setup(ax, signal):
     for i, bar in enumerate(bars[flip_end:], 1):
         label_bar(ax, i, bar)
 
-    ax.autoscale_view()
     return bars
 
 
-def plot_setup(signal, date_strfmt='%b-%d'):
-    weekdays = dates.WeekdayLocator(dates.WEEKDAYS[:-2])
+def countdown(ax, signal):
+    bars = [[b['dt'].to_pydatetime(), b['open'],
+             b['close'], b['high'], b['low']] for b in signal['bars']]
+
+    finance.plot_day_summary(ax, bars)
+
+    for i, pos in enumerate(signal['signals']):
+        label_bar(ax, i, bars[pos])
+
+    return bars
+
+
+def start_plot(date_strfmt='%b-%d'):
+    alldays = dates.DayLocator()
     day_formatter = dates.DateFormatter(date_strfmt)
 
     fig = pylab.figure(figsize=(16, 9))
@@ -66,14 +77,30 @@ def plot_setup(signal, date_strfmt='%b-%d'):
 
     ax = fig.add_subplot(111)
     ax.margins(0.05, 0.05)
-    ax.xaxis.set_major_locator(weekdays)
+    ax.xaxis.set_major_locator(alldays)
     ax.xaxis.set_major_formatter(day_formatter)
+    return ax
 
-    setup(ax, signal)
 
+def show(ax):
     ax.xaxis_date()
     ax.autoscale_view()
-
     pylab.setp(pylab.gca().get_xticklabels(), rotation=45,
                horizontalalignment='right')
     pylab.show()
+
+
+def plot_setup(signal, date_strfmt='%b-%d'):
+    ax = start_plot(date_strfmt)
+    setup(ax, signal)
+    show(ax)
+
+
+def plot_countdown(signal, date_strfmt='%b-%d'):
+    ax = start_plot(date_strfmt)
+
+    if signal['setup']:
+        setup(ax, signal['setup'])
+
+    countdown(ax, signal)
+    show(ax)
