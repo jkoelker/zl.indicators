@@ -142,9 +142,11 @@ class SetupWindow(transforms.EventWindow):
         self.flip_signal = None
         self._counter = 0
 
-    def handle_add(self, event):
-        self.flip.update(event)
+    def update(self, *args, **kwargs):
+        self.flip.update(*args, **kwargs)
+        transforms.EventWindow.update(self, *args, **kwargs)
 
+    def handle_add(self, event):
         for field in (self.field, 'high', 'low'):
             assert field in event
             assert isinstance(event[field], numbers.Number)
