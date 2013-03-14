@@ -137,13 +137,21 @@ class SetupWindow(transforms.EventWindow):
         self.period = period
         self.lookback = lookback
         self.field = field
-
-        self.flip = flip.FlipWindow(flip_period, flip_field)
+        self.flip_period = flip_period
+        self.flip_field = flip_field
         self.flip_signal = None
+        self.flip = None
         self._counter = 0
+        self._reset_flip()
+
+    def _reset_flip(self):
+        self._counter = 0
+        self.flip_signal = None
+        self.flip = flip.FlipWindow(self.flip_period, self.flip_field)
 
     def update(self, *args, **kwargs):
-        self.flip.update(*args, **kwargs)
+        if self.flip is not None:
+            self.flip.update(*args, **kwargs)
         transforms.EventWindow.update(self, *args, **kwargs)
 
     def handle_add(self, event):
@@ -158,7 +166,7 @@ class SetupWindow(transforms.EventWindow):
         flip_signal = self.flip()
         self._counter = self._counter + 1
 
-        if flip_signal and not self.flip_signal:
+        if flip_signal:
             self.flip_signal = flip_signal
             self._counter = 1
 
@@ -168,12 +176,8 @@ class SetupWindow(transforms.EventWindow):
         if not self.flip_signal:
             return
 
-        if self._counter > self.period:
-            self._counter = 0
-            return
-
         if self._counter == self.period:
             signal = setup(self.ticks, self.field, self.period,
                            self.lookback, self.flip_signal)
-            self.flip_signal = None
+            self._reset_flip()
             return signal
