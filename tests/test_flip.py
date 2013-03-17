@@ -44,7 +44,7 @@ class TestFlip(tests.Base):
         same = generators.random_day()
         df = same.append(same)
         df = df.append(same)
-        df = generators.random_events(2)
+        df = generators.random_days(2)
         df = df.append(same)
         df = df.append(same)
 
