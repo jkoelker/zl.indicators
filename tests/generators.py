@@ -50,6 +50,13 @@ def random_day(seed=20):
                          'volume': [1000]})
 
 
+def random_events(length=6, seed=20):
+    df = random_day(seed)
+    for _i in xrange(length - 1):
+        df = df.append(random_day(seed))
+    return df
+
+
 def flip(seed, period, functions):
     closes = [f(seed) for f in functions]
     opens = [random.choice([higher, lower])(c) for c in closes]

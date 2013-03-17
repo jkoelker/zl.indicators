@@ -41,11 +41,12 @@ class TestFlip(tests.Base):
 
     # TODO(jkoelker) create better tests for no flip ;(
     def test_no_flip(self):
-        df = generators.random_day()
-        for _i in xrange(6):
-            df = df.append(df)
-
-        df = df.append(generators.random_day())
+        same = generators.random_day()
+        df = same.append(same)
+        df = df.append(same)
+        df = generators.random_events(2)
+        df = df.append(same)
+        df = df.append(same)
 
         events = generators.to_events(df)
         signal = flip.flip(events, 'close')
