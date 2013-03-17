@@ -38,3 +38,16 @@ class TestFlip(tests.Base):
         self.assertIsNotNone(signal)
         self.assertEqual(signal['direction'], flip.BULL)
         self.assertEqual(signal['bars'], events)
+
+    # TODO(jkoelker) create better tests for no flip ;(
+    def test_no_flip(self):
+        df = generators.random_day()
+        for _i in xrange(6):
+            df = df.append(df)
+
+        df = df.append(generators.random_day())
+
+        events = generators.to_events(df)
+        signal = flip.flip(events, 'close')
+
+        self.assertIsNone(signal)
