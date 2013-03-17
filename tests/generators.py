@@ -50,9 +50,7 @@ def random_day(seed=20):
                          'volume': [1000]})
 
 
-def bear_flip(seed=20, period=4):
-    middle = [near] * (period - 2)
-    functions = [lower, higher] + middle + [higher, lower]
+def flip(seed, period, functions):
     closes = [f(seed) for f in functions]
     opens = [random.choice([higher, lower])(c) for c in closes]
     highs = [higher(np.max(x)) for x in itertools.izip(opens, closes)]
@@ -61,3 +59,15 @@ def bear_flip(seed=20, period=4):
 
     return pd.DataFrame({'price': closes, 'open': opens, 'close': closes,
                          'high': highs, 'low': lowes, 'volume': volumes})
+
+
+def bear_flip(seed=20, period=4):
+    middle = [near] * (period - 2)
+    functions = [lower, higher] + middle + [higher, lower]
+    return flip(seed, period, functions)
+
+
+def bull_flip(seed=20, period=4):
+    middle = [near] * (period - 2)
+    functions = [higher, lower] + middle + [lower, higher]
+    return flip(seed, period, functions)

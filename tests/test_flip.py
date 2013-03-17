@@ -28,4 +28,13 @@ class TestFlip(tests.Base):
 
         self.assertIsNotNone(signal)
         self.assertEqual(signal['direction'], flip.BEAR)
-        self.assertEqual(signal['direction'], flip.BEAR)
+        self.assertEqual(signal['bars'], events)
+
+    def test_bull_flip(self):
+        df = generators.bull_flip()
+        events = generators.to_events(df)
+        signal = flip.flip(events, 'close')
+
+        self.assertIsNotNone(signal)
+        self.assertEqual(signal['direction'], flip.BULL)
+        self.assertEqual(signal['bars'], events)
