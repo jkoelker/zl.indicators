@@ -6,4 +6,4 @@ install:
 before_script:
   - "flake8 --builtins=_ zl tests"
 script:
-  - python -m testtools.run discover tests
+  - nosetests -w tests
