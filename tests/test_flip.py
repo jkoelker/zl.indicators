@@ -47,6 +47,7 @@ class TestFlip(tests.Base):
         df = generators.random_days(2)
         df = df.append(same)
         df = df.append(same)
+        df = df.reset_index()
 
         events = generators.to_events(df)
         signal = flip.flip(events, 'close')
